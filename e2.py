@@ -4,14 +4,33 @@ import streamlit as st
 from io import BytesIO
 
 # Function to process the renaming
-def process_rename(master_file, uploaded_pdfs):
+def process_rename(master_file, folder_path):
     try:
-        # Read the master Excel file
-        temp_df = pd.read_excel(master_file)
+        # Clean the folder path (remove any leading/trailing spaces or quotes)
+        folder_path = folder_path.strip().strip('"')
+
+        # Validate the folder path
+        if not os.path.exists(folder_path):
+            st.error(f"The folder path '{folder_path}' does not exist. Please provide a valid path.")
+            return
+
+        if not os.path.isdir(folder_path):
+            st.error(f"The provided path '{folder_path}' is not a folder. Please provide a valid folder path.")
+            return
+
+        # Read the master Excel file (from BytesIO if it's uploaded)
+        if isinstance(master_file, BytesIO):
+            temp_df = pd.read_excel(master_file)
+        else:
+            temp_df = pd.read_excel(master_file)
 
         # Display all data in the file
         st.subheader("Data in Master Excel File")
         st.write(temp_df)
+
+        # Display row and column numbers
+        rows, cols = temp_df.shape
+        st.write(f"Total Rows: {rows}, Total Columns: {cols}")
 
         # Dynamically find the columns for PAN and NAME
         pan_column = next((col for col in temp_df.columns if "PAN" in col.upper()), None)
@@ -21,58 +40,38 @@ def process_rename(master_file, uploaded_pdfs):
             st.error("Error: Could not find PAN or NAME columns in the master file.")
             return
 
-        # Clean PAN column by stripping whitespace
+        # Read the necessary columns
         master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
-        master_df[pan_column] = master_df[pan_column].str.strip()  # Remove extra spaces
-
-        # Print cleaned PAN values for debugging
-        st.write("Cleaned PAN values:")
-        st.write(master_df[pan_column].unique())
-
         pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
 
+        # Get all PDF files in the selected folder
+        tds_files = [f for f in os.listdir(folder_path) if f.endswith(".pdf")]
+
         renamed_count = 0
-        renamed_files = []
+        error_files = []
 
-        # Process each uploaded PDF
-        for pdf_file in uploaded_pdfs:
+        for file_name in tds_files:
             try:
-                # Extract PAN from the file name
-                pan = pdf_file.name.split("_")[0]
-                st.write(f"Extracted PAN from filename: {pan}")  # Debugging
-
+                # Extract PAN from file name
+                pan = file_name.split("_")[0]
                 if pan in pan_name_mapping:
                     # Generate new filename in the desired format
                     name = pan_name_mapping[pan].strip()
                     new_name = f"{pan} - {name}.pdf"
-
-                    # Save the renamed file as a downloadable link
-                    with open(f"./temp/{new_name}", "wb") as f:
-                        f.write(pdf_file.getbuffer())
+                    old_file_path = os.path.join(folder_path, file_name)
+                    new_file_path = os.path.join(folder_path, new_name)
+                    os.rename(old_file_path, new_file_path)
                     renamed_count += 1
-                    renamed_files.append(new_name)  # Add renamed file to the list
                 else:
-                    renamed_files.append(f"Error: PAN not found for {pdf_file.name}")
-
+                    error_files.append(file_name)
             except Exception as e:
-                renamed_files.append(f"Error processing {pdf_file.name}: {str(e)}")
+                error_files.append(f"{file_name} - {str(e)}")
 
         st.success(f"Total files renamed: {renamed_count}")
-
-        # Show renamed files
-        if renamed_files:
-            st.subheader("Renamed Files:")
-            for file in renamed_files:
-                st.write(file)
-
         if renamed_count > 0:
-            # Allow users to download renamed files
-            for file in renamed_files:
-                if "Error" not in file:
-                    st.download_button(label=f"Download {file}",
-                                       data=open(f"./temp/{file}", "rb"),
-                                       file_name=file,
-                                       mime="application/pdf")
+            st.write(f"Sample renamed file format: `{pan} - {name}.pdf`")
+        if error_files:
+            st.warning(f"Some files could not be renamed: {', '.join(error_files)}")
 
     except Exception as e:
         st.error(f"Error processing the file: {e}")
@@ -80,23 +79,29 @@ def process_rename(master_file, uploaded_pdfs):
 # Streamlit UI
 st.title("PDF Renaming Utility")
 
-# File upload section for the master Excel file
+# File upload section
 uploaded_file = st.file_uploader("Upload the Master Excel file here", type=["xlsx"])
-
-# File upload section for PDF files
-uploaded_pdfs = st.file_uploader("Upload TDS certificate PDFs here", type=["pdf"], accept_multiple_files=True)
 
 # Show data and row/column numbers as soon as the file is uploaded
 if uploaded_file:
+    # Read the uploaded Excel file into a pandas DataFrame
     temp_df = pd.read_excel(uploaded_file)
+
+    # Display the data
     st.subheader("Data in Master Excel File")
     st.write(temp_df)
+
+    # Display row and column numbers
     rows, cols = temp_df.shape
     st.write(f"Total Rows: {rows}, Total Columns: {cols}")
 
+# Folder selection section
+folder_path = st.text_input("Enter the folder path where TDS certificates are stored:")
+
 # Button to trigger the renaming
 if st.button("Rename Files"):
-    if uploaded_file and uploaded_pdfs:
-        process_rename(uploaded_file, uploaded_pdfs)
+    if uploaded_file and folder_path:
+        # Process the renaming
+        process_rename(uploaded_file, folder_path)
     else:
-        st.error("Please upload both the master file and the TDS certificate PDFs.")
+        st.error("Please upload the master file and provide the folder path.")
