@@ -21,8 +21,14 @@ def process_rename(master_file, uploaded_pdfs):
             st.error("Error: Could not find PAN or NAME columns in the master file.")
             return
 
-        # Read the necessary columns
+        # Clean PAN column by stripping whitespace
         master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
+        master_df[pan_column] = master_df[pan_column].str.strip()  # Remove extra spaces
+
+        # Print cleaned PAN values for debugging
+        st.write("Cleaned PAN values:")
+        st.write(master_df[pan_column].unique())
+
         pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
 
         renamed_count = 0
@@ -33,6 +39,8 @@ def process_rename(master_file, uploaded_pdfs):
             try:
                 # Extract PAN from the file name
                 pan = pdf_file.name.split("_")[0]
+                st.write(f"Extracted PAN from filename: {pan}")  # Debugging
+
                 if pan in pan_name_mapping:
                     # Generate new filename in the desired format
                     name = pan_name_mapping[pan].strip()
