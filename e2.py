@@ -11,6 +11,9 @@ def process_rename(master_file, folder_path):
         # Clean the folder path (remove any leading/trailing spaces or quotes)
         folder_path = folder_path.strip().strip('"')
 
+        # Handle Windows-style file paths by converting backslashes to forward slashes or escaped backslashes
+        folder_path = folder_path.replace("\\", "/")  # Convert backslashes to forward slashes
+
         # Validate the folder path
         if not os.path.exists(folder_path):
             st.error(f"The folder path '{folder_path}' does not exist. Please provide a valid path.")
