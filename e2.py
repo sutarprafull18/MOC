@@ -12,51 +12,43 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for better styling including background image and floating button
-st.markdown("""
-<style>
-    .main {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%230099ff' fill-opacity='0.1' d='M0,96L48,122.7C96,149,192,203,288,202.7C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,106.7C1248,85,1344,107,1392,117.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
-        background-attachment: fixed;
-        background-size: cover;
-    }
-    .stButton>button {
-        width: 100%;
-        background-color: #4CAF50;
-        color: white;
-        padding: 0.5rem;
-        margin: 1rem 0;
-    }
-    .stButton>button:hover {
-        background-color: #45a049;
-    }
-    .status-box {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-    }
-    .data-stats {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-    }
-    .floating-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 999;
-    }
-    .dataframe {
-        background-color: rgba(255, 255, 255, 0.9) !important;
-    }
-    div[data-testid="stDataFrame"] {
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 1rem;
-        border-radius: 0.5rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Include custom CSS and logo styling
+st.markdown(
+    """
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+        div[data-testid="stDataFrame"] {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .logo-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        .logo-container img {
+            height: 80px;
+            width: auto;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+    <div class="logo-container">
+        <img src="logo.png" alt="Logo">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 def display_excel_data(df):
     """Display Excel data immediately after upload"""
