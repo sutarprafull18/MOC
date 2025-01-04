@@ -4,6 +4,16 @@ import re
 from io import BytesIO
 import base64
 import zipfile
+import requests
+
+# Function to fetch and encode image from URL
+def get_image_from_url(url):
+    try:
+        response = requests.get(url)
+        return base64.b64encode(response.content).decode()
+    except Exception as e:
+        st.error(f"Error loading image from {url}: {str(e)}")
+        return None
 
 # Set page configuration
 st.set_page_config(
@@ -12,43 +22,88 @@ st.set_page_config(
     layout="wide"
 )
 
-# Include custom CSS and logo styling
-st.markdown(
-    """
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: url('background.jpg') no-repeat center center fixed;
+# Replace these URLs with your actual Git repo raw file URLs
+BACKGROUND_URL = "YOUR_RAW_GIT_URL/background.jpg"
+LOGO_URL = "YOUR_RAW_GIT_URL/logo.png"
+
+# Add background image
+background_image = get_image_from_url(BACKGROUND_URL)
+if background_image:
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/jpg;base64,{background_image}");
             background-size: cover;
-            font-family: Arial, sans-serif;
-        }
-        div[data-testid="stDataFrame"] {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .logo-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-        }
-        .logo-container img {
-            height: 80px;
-            width: auto;
-            border-radius: 50%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-    </style>
-    <div class="logo-container">
-        <img src="logo.png" alt="Logo">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Add logo
+logo_image = get_image_from_url(LOGO_URL)
+if logo_image:
+    st.markdown(
+        f"""
+        <style>
+            .logo-container {{
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 1000;
+            }}
+            .logo-container img {{
+                height: 80px;
+                width: auto;
+                border-radius: 50%;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }}
+            div[data-testid="stDataFrame"] {{
+                background-color: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(10px);
+                padding: 1rem;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }}
+            .stButton > button {{
+                width: 100%;
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                margin-top: 20px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }}
+            .stButton > button:hover {{
+                background-color: #45a049;
+            }}
+            @media (max-width: 768px) {{
+                .logo-container {{
+                    top: 10px;
+                    left: 10px;
+                }}
+                .logo-container img {{
+                    height: 60px;
+                }}
+                div[data-testid="stDataFrame"] {{
+                    padding: 0.5rem;
+                    border-radius: 5px;
+                }}
+            }}
+        </style>
+        <div class="logo-container">
+            <img src="data:image/png;base64,{logo_image}" alt="Logo">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def display_excel_data(df):
     """Display Excel data immediately after upload"""
