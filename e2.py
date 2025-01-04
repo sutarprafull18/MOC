@@ -23,8 +23,8 @@ st.set_page_config(
 )
 
 # Replace these URLs with your actual Git repo raw file URLs
-BACKGROUND_URL = "YOUR_RAW_GIT_URL/background.jpg"
-LOGO_URL = "YOUR_RAW_GIT_URL/logo.png"
+BACKGROUND_URL = "https://github.dev/sutarprafull18/MOC/blob/96b99e6f2abda5ec9c260f8098fa04bbb9089c17/background.jpg"
+LOGO_URL = "https://github.dev/sutarprafull18/MOC/blob/96b99e6f2abda5ec9c260f8098fa04bbb9089c17/logo.png"
 
 # Add background image
 background_image = get_image_from_url(BACKGROUND_URL)
