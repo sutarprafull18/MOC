@@ -42,26 +42,27 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def display_excel_data(df):
+    """Display Excel data immediately after upload"""
+    st.markdown("### 📊 Master File Data")
+    st.dataframe(df, use_container_width=True)
+    
+    # Calculate and display data statistics
+    rows = len(df)
+    total_data_points = rows + (rows - 1)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Rows", rows)
+    with col2:
+        st.metric("Total Data Points", total_data_points)
+    with col3:
+        st.metric("Total Columns", len(df.columns))
+
 def process_rename(master_file, pdf_files):
     try:
         # Read the master Excel file
         temp_df = pd.read_excel(master_file)
-        
-        # Display data statistics in a formatted way
-        with st.expander("📊 Master File Data Details", expanded=True):
-            st.dataframe(temp_df, use_container_width=True)
-            
-            # Calculate and display data statistics
-            rows = len(temp_df)
-            total_data_points = rows + (rows - 1)
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Rows", rows)
-            with col2:
-                st.metric("Total Data Points", total_data_points)
-            with col3:
-                st.metric("Total Columns", len(temp_df.columns))
 
         # Dynamically find the columns for PAN and NAME
         pan_column = next((col for col in temp_df.columns if "PAN" in col.upper()), None)
@@ -100,14 +101,14 @@ def process_rename(master_file, pdf_files):
 
                         # Check if the extracted PAN matches any PAN in the master data
                         if pan in pan_name_mapping:
-                            # Keep the original filename structure
+                            # Preserve the original filename structure
                             original_name = uploaded_file.name
-                            # Get everything between PAN and .pdf
-                            middle_part = original_name[len(pan):original_name.rfind('.pdf')]
+                            # Extract the part after PAN (e.g., _Q1_2025-26)
+                            remaining_part = original_name[original_name.find(pan) + len(pan):original_name.rfind('.pdf')]
                             
-                            # Generate new filename preserving the original structure
+                            # Generate new filename
                             name = pan_name_mapping[pan].strip()
-                            new_name = f"{pan}{middle_part} - {name}.pdf"
+                            new_name = f"{pan}{remaining_part} - {name}.pdf"
                             
                             # Add file to ZIP
                             zip_file.writestr(new_name, uploaded_file.getvalue())
@@ -177,6 +178,11 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("### 📊 Step 1: Upload Master File")
     master_file = st.file_uploader("Upload the Master Excel file (XLSX)", type=["xlsx"])
+    
+    # Display Excel data immediately after upload
+    if master_file:
+        df = pd.read_excel(master_file)
+        display_excel_data(df)
 
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
