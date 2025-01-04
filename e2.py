@@ -187,44 +187,40 @@ with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
     pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
-# Floating container for buttons
-if master_file or pdf_files:
-    st.markdown(
-        """
-        <div class='floating-container'>
-            <iframe srcdoc='
-                <button 
-                    style="
-                        padding: 15px 30px;
-                        background-color: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 25px;
-                        cursor: pointer;
-                        font-size: 16px;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                    "
-                    onclick="window.parent.document.querySelector(\'button[kind=primary]\').click();">
-                    🚀 Process Files
-                </button>
-            ' width="200" height="60" frameborder="0">
-            </iframe>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    if pdf_files:
+        st.markdown(
+            """
+            <style>
+                .process-button {
+                    width: 100%;
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 10px 20px;
+                    margin-top: 20px;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                }
+                .process-button:hover {
+                    background-color: #45a049;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("🚀 Process Files", key="process_files"):
+            if master_file and pdf_files:
+                zip_buffer = process_rename(master_file, pdf_files)
+                if zip_buffer:
+                    st.download_button(
+                        label="📥 Download Renamed Files (ZIP)",
+                        data=zip_buffer,
+                        file_name="renamed_files.zip",
+                        mime="application/zip",
+                        key="download_button"
+                    )
+            else:
+                st.error("⚠️ Please upload both the master file and PDF files.")
 
-# Hidden process button that will be triggered by floating button
-if st.button("Process Files", key="hidden_process"):
-    if master_file and pdf_files:
-        zip_buffer = process_rename(master_file, pdf_files)
-        if zip_buffer:
-            st.download_button(
-                label="📥 Download Renamed Files (ZIP)",
-                data=zip_buffer,
-                file_name="renamed_files.zip",
-                mime="application/zip",
-                key="download_button"
-            )
-    else:
-        st.error("⚠️ Please upload both the master file and PDF files.")
