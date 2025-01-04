@@ -1,31 +1,15 @@
-import os
-import pandas as pd
 import streamlit as st
-from io import BytesIO
-from werkzeug.utils import secure_filename
+import pandas as pd
 import re
+from io import BytesIO
+import base64
+import zipfile
 
-# Function to process the renaming
-def process_rename(master_file, folder_path):
+def process_rename(master_file, pdf_files):
     try:
-        # Clean the folder path (remove any leading/trailing spaces or quotes)
-        folder_path = folder_path.strip().strip('"')
-
-        # Handle Windows-style file paths by converting backslashes to forward slashes or escaped backslashes
-        folder_path = folder_path.replace("\\", "/")  # Convert backslashes to forward slashes
-
-        # Validate the folder path
-        if not os.path.exists(folder_path):
-            st.error(f"The folder path '{folder_path}' does not exist. Please provide a valid path.")
-            return
-
-        if not os.path.isdir(folder_path):
-            st.error(f"The provided path '{folder_path}' is not a folder. Please provide a valid folder path.")
-            return
-
         # Read the master Excel file
         temp_df = pd.read_excel(master_file)
-
+        
         # Display all data in the file
         st.subheader("Data in Master Excel File")
         st.write(temp_df)
@@ -40,84 +24,89 @@ def process_rename(master_file, folder_path):
 
         if not pan_column or not name_column:
             st.error("Error: Could not find PAN or NAME columns in the master file.")
-            return
+            return None
 
         # Read the necessary columns
         master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
         pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
 
-        # Debugging: Output the cleaned PAN values
-        st.write(f"Cleaned PAN values: {', '.join(pan_name_mapping.keys())}")
+        # Create a ZIP file in memory
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            renamed_count = 0
+            error_files = []
 
-        # Get all PDF files in the selected folder
-        tds_files = [f for f in os.listdir(folder_path) if f.endswith(".pdf")]
+            # Regex pattern for matching PAN format
+            pan_regex = r"([A-Z]{5}[0-9]{4}[A-Z]{1})"
 
-        renamed_count = 0
-        error_files = []
+            for uploaded_file in pdf_files:
+                try:
+                    # Extract PAN from filename using regex
+                    match = re.search(pan_regex, uploaded_file.name)
 
-        # Regex pattern for matching PAN format (assuming it's always 10 characters like 'AAAAA9999A')
-        pan_regex = r"([A-Z]{5}[0-9]{4}[A-Z]{1})"
+                    if match:
+                        pan = match.group(1)
+                        st.write(f"Processing: {uploaded_file.name}")
 
-        for file_name in tds_files:
-            try:
-                # Extract PAN from file name using regex
-                match = re.search(pan_regex, file_name)
-
-                if match:
-                    pan = match.group(1)
-                    st.write(f"Extracted PAN from filename: {pan}.pdf")
-
-                    # Check if the extracted PAN matches any PAN in the master data
-                    if pan in pan_name_mapping:
-                        # Generate new filename in the desired format
-                        name = pan_name_mapping[pan].strip()
-                        new_name = f"{pan} - {name}.pdf"
-                        old_file_path = os.path.join(folder_path, file_name)
-                        new_file_path = os.path.join(folder_path, new_name)
-                        os.rename(old_file_path, new_file_path)
-                        renamed_count += 1
+                        # Check if the extracted PAN matches any PAN in the master data
+                        if pan in pan_name_mapping:
+                            # Get the original filename parts
+                            original_name = uploaded_file.name
+                            suffix = original_name[len(pan):]  # Get everything after the PAN
+                            
+                            # Generate new filename
+                            name = pan_name_mapping[pan].strip()
+                            new_name = f"{pan}{suffix} - {name}.pdf"
+                            
+                            # Add file to ZIP
+                            zip_file.writestr(new_name, uploaded_file.getvalue())
+                            renamed_count += 1
+                        else:
+                            error_files.append(uploaded_file.name)
                     else:
-                        error_files.append(file_name)
-                else:
-                    error_files.append(file_name)
-            except Exception as e:
-                error_files.append(f"{file_name} - {str(e)}")
+                        error_files.append(uploaded_file.name)
+                except Exception as e:
+                    error_files.append(f"{uploaded_file.name} - {str(e)}")
 
-        st.success(f"Total files renamed: {renamed_count}")
-        if renamed_count > 0:
-            st.write(f"Sample renamed file format: `{pan} - {name}.pdf`")
+        # Display results
+        st.success(f"Total files processed: {renamed_count}")
         if error_files:
-            st.warning(f"Some files could not be renamed: {', '.join(error_files)}")
+            st.warning(f"Files that couldn't be processed: {', '.join(error_files)}")
+
+        # Return the ZIP file if files were processed
+        if renamed_count > 0:
+            zip_buffer.seek(0)
+            return zip_buffer
+        return None
 
     except Exception as e:
-        st.error(f"Error processing the file: {e}")
+        st.error(f"Error processing the files: {e}")
+        return None
 
 # Streamlit UI
 st.title("PDF Renaming Utility")
+st.markdown("""
+### Instructions:
+1. Upload the Master Excel file containing PAN and NAME columns
+2. Upload all PDF files that need to be renamed
+3. Click 'Process Files' to rename and download the results
+""")
 
-# File upload section
-uploaded_file = st.file_uploader("Upload the Master Excel file here", type=["xlsx"])
+# File upload sections
+master_file = st.file_uploader("Upload the Master Excel file (XLSX)", type=["xlsx"])
+pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
-# Show data and row/column numbers as soon as the file is uploaded
-if uploaded_file:
-    # Read the uploaded Excel file
-    temp_df = pd.read_excel(uploaded_file)
-
-    # Display the data
-    st.subheader("Data in Master Excel File")
-    st.write(temp_df)
-
-    # Display row and column numbers
-    rows, cols = temp_df.shape
-    st.write(f"Total Rows: {rows}, Total Columns: {cols}")
-
-# Folder selection section
-folder_path = st.text_input("Enter the folder path where TDS certificates are stored:")
-
-# Button to trigger the renaming
-if st.button("Rename Files"):
-    if uploaded_file and folder_path:
-        # Process the renaming
-        process_rename(uploaded_file, folder_path)
+# Process button
+if st.button("Process Files"):
+    if master_file and pdf_files:
+        zip_buffer = process_rename(master_file, pdf_files)
+        if zip_buffer:
+            # Create download button for ZIP file
+            st.download_button(
+                label="Download Renamed Files (ZIP)",
+                data=zip_buffer,
+                file_name="renamed_files.zip",
+                mime="application/zip"
+            )
     else:
-        st.error("Please upload the master file and provide the folder path.")
+        st.error("Please upload both the master file and PDF files.")
