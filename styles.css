@@ -1,0 +1,67 @@
+/* General page styling */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: url('../assets/images/background.jpg') no-repeat center center fixed; /* Full-page background */
+    background-size: cover;
+    filter: blur(0px); /* Default for the body */
+    height: 100vh; /* Make it cover the full height */
+    width: 100vw; /* Full width */
+}
+
+/* Blurred background specific to the table container */
+div[data-testid="stDataFrame"] {
+    background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white for clarity */
+    backdrop-filter: blur(10px); /* Adds blur behind the table */
+    padding: 1rem; /* Adds padding to the table area */
+    border-radius: 10px; /* Rounded corners for the table */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for elevation */
+}
+
+/* Logo styling */
+.logo-container {
+    position: absolute;
+    top: 20px; /* Adjust as needed */
+    left: 20px; /* Adjust as needed */
+    z-index: 1000; /* Ensure it appears on top of everything */
+}
+
+.logo-container img {
+    height: 80px; /* Adjust logo size */
+    width: auto; /* Maintain aspect ratio */
+    border-radius: 50%; /* Optional: Makes the logo circular */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
+
+/* Button styling for consistency */
+.stButton>button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+}
+
+.stButton>button:hover {
+    background-color: #45a049;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .logo-container {
+        top: 10px;
+        left: 10px;
+    }
+    .logo-container img {
+        height: 60px;
+    }
+    div[data-testid="stDataFrame"] {
+        padding: 0.5rem;
+        border-radius: 5px;
+    }
+}
