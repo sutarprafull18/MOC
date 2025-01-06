@@ -143,28 +143,32 @@ if logo_image:
 
 def display_files_with_native_pagination(files, key_prefix="", items_per_page=5):
     """Display files using Streamlit's native pagination"""
-    total_items = len(files)
-    total_pages = math.ceil(total_items / items_per_page)
-    
-    cols = st.columns([2, 1, 1, 2])
-    
-    if f"{key_prefix}_page" not in st.session_state:
-        st.session_state[f"{key_prefix}_page"] = 0
-    
-    start_idx = st.session_state[f"{key_prefix}_page"] * items_per_page
-    end_idx = min(start_idx + items_per_page, total_items)
-    
-    with cols[1]:
-        st.markdown(f'<p class="current-page">Page {st.session_state[f"{key_prefix}_page"] + 1}</p>', unsafe_allow_html=True)
-    with cols[2]:
-        st.markdown(f'<p class="current-page">of {total_pages}</p>', unsafe_allow_html=True)
-    
-    if cols[0].button("← Previous", key=f"{key_prefix}_prev", disabled=st.session_state[f"{key_prefix}_page"] == 0):
-        st.session_state[f"{key_prefix}_page"] -= 1
+    if f"{key_prefix}_data" not in st.session_state:
+        st.session_state[f"{key_prefix}_data"] = files
         
-    if cols[3].button("Next →", key=f"{key_prefix}_next", disabled=st.session_state[f"{key_prefix}_page"] >= total_pages - 1):
-        st.session_state[f"{key_prefix}_page"] += 1
+    if f"{key_prefix}_page" not in st.session_state:
+        st.session_state[f"{key_prefix}_page"] = 1
+
+    total_pages = math.ceil(len(files) / items_per_page)
+    current_page = st.session_state[f"{key_prefix}_page"]
     
+    col1, col2, col3 = st.columns([4, 1, 1])
+    
+    # Display page information
+    col1.markdown(f"Showing page {current_page} of {total_pages}")
+    
+    # Navigation buttons
+    if col2.button("←", key=f"{key_prefix}_prev", disabled=current_page==1):
+        st.session_state[f"{key_prefix}_page"] = max(1, current_page - 1)
+        
+    if col3.button("→", key=f"{key_prefix}_next", disabled=current_page==total_pages):
+        st.session_state[f"{key_prefix}_page"] = min(total_pages, current_page + 1)
+    
+    # Calculate slice indices
+    start_idx = (current_page - 1) * items_per_page
+    end_idx = min(start_idx + items_per_page, len(files))
+    
+    # Display current page's files
     current_files = files[start_idx:end_idx]
     for file in current_files:
         st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
