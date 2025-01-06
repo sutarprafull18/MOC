@@ -7,7 +7,6 @@ import zipfile
 import requests
 import math
 
-# Function to fetch and encode image from URL
 def get_image_from_url(url):
     try:
         response = requests.get(url)
@@ -16,18 +15,15 @@ def get_image_from_url(url):
         st.error(f"Error loading image from {url}: {str(e)}")
         return None
 
-# Set page configuration
 st.set_page_config(
     page_title="PDF Renaming Utility",
     page_icon="📄",
     layout="wide"
 )
 
-# Replace these URLs with your actual Git repo raw file URLs
 BACKGROUND_URL = "https://raw.githubusercontent.com/sutarprafull18/MOC/refs/heads/main/background.jpg"
 LOGO_URL = "https://raw.githubusercontent.com/sutarprafull18/MOC/refs/heads/main/logo.png"
 
-# Add background image
 background_image = get_image_from_url(BACKGROUND_URL)
 if background_image:
     st.markdown(
@@ -45,7 +41,6 @@ if background_image:
         unsafe_allow_html=True
     )
 
-# Add logo
 logo_image = get_image_from_url(LOGO_URL)
 if logo_image:
     st.markdown(
@@ -97,6 +92,34 @@ if logo_image:
                 border-radius: 5px;
                 margin: 5px 0;
             }}
+            .process-button {{
+                width: 100%;
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                margin-top: 20px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }}
+            .process-button:hover {{
+                background-color: #45a049;
+            }}
+            .file-navigation {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 10px 0;
+            }}
+            .file-navigation button {{
+                margin: 0 5px;
+            }}
+            .current-page {{
+                margin: 0 10px;
+                font-size: 14px;
+            }}
             @media (max-width: 768px) {{
                 .logo-container {{
                     top: 10px;
@@ -118,50 +141,35 @@ if logo_image:
         unsafe_allow_html=True
     )
 
-def display_paginated_files(files, page_size=10, key_prefix=""):
-    """Display files with pagination"""
-    total_pages = math.ceil(len(files) / page_size)
+def display_files_with_native_pagination(files, key_prefix="", items_per_page=5):
+    """Display files using Streamlit's native pagination"""
+    total_items = len(files)
+    total_pages = math.ceil(total_items / items_per_page)
     
-    # Initialize session state for pagination if not exists
+    cols = st.columns([2, 1, 1, 2])
+    
     if f"{key_prefix}_page" not in st.session_state:
-        st.session_state[f"{key_prefix}_page"] = 1
+        st.session_state[f"{key_prefix}_page"] = 0
     
-    current_page = st.session_state[f"{key_prefix}_page"]
+    start_idx = st.session_state[f"{key_prefix}_page"] * items_per_page
+    end_idx = min(start_idx + items_per_page, total_items)
     
-    # Display pagination controls
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f"""
-            <div class="pagination-info">
-                Showing page {current_page} of {total_pages}
-            </div>
-        """, unsafe_allow_html=True)
+    with cols[1]:
+        st.markdown(f'<p class="current-page">Page {st.session_state[f"{key_prefix}_page"] + 1}</p>', unsafe_allow_html=True)
+    with cols[2]:
+        st.markdown(f'<p class="current-page">of {total_pages}</p>', unsafe_allow_html=True)
     
-    # Calculate start and end indices for current page
-    start_idx = (current_page - 1) * page_size
-    end_idx = min(start_idx + page_size, len(files))
+    if cols[0].button("← Previous", key=f"{key_prefix}_prev", disabled=st.session_state[f"{key_prefix}_page"] == 0):
+        st.session_state[f"{key_prefix}_page"] -= 1
+        
+    if cols[3].button("Next →", key=f"{key_prefix}_next", disabled=st.session_state[f"{key_prefix}_page"] >= total_pages - 1):
+        st.session_state[f"{key_prefix}_page"] += 1
     
-    # Display files for current page
-    for file in files[start_idx:end_idx]:
+    current_files = files[start_idx:end_idx]
+    for file in current_files:
         st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
-    
-    # Pagination controls
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    
-    with col1:
-        if current_page > 1:
-            if st.button("⬅️ Previous", key=f"{key_prefix}_prev"):
-                st.session_state[f"{key_prefix}_page"] -= 1
-                st.experimental_rerun()
-    
-    with col4:
-        if current_page < total_pages:
-            if st.button("Next ➡️", key=f"{key_prefix}_next"):
-                st.session_state[f"{key_prefix}_page"] += 1
-                st.experimental_rerun()
 
 def display_excel_data(df):
-    """Display Excel data immediately after upload"""
     st.markdown("### 📊 Master File Data")
     st.dataframe(df, use_container_width=True)
     
@@ -199,18 +207,15 @@ def process_rename(master_file, pdf_files):
             progress_bar = st.progress(0)
             status_text = st.empty()
 
-            # First, identify unmatched files
             for uploaded_file in pdf_files:
                 match = re.search(pan_regex, uploaded_file.name)
                 if not match or (match and match.group(1) not in pan_name_mapping):
                     unmatched_files.append(uploaded_file.name)
 
-            # Display unmatched files if any
             if unmatched_files:
                 st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
-                display_paginated_files(unmatched_files, page_size=10, key_prefix="unmatched")
-                
-            # Process all files
+                display_files_with_native_pagination(unmatched_files, "unmatched")
+
             for idx, uploaded_file in enumerate(pdf_files):
                 try:
                     match = re.search(pan_regex, uploaded_file.name)
@@ -219,7 +224,6 @@ def process_rename(master_file, pdf_files):
                         status_text.text(f"Processing: {uploaded_file.name}")
 
                         if pan in pan_name_mapping:
-                            # Process matched files
                             original_name = uploaded_file.name
                             remaining_part = original_name[original_name.find(pan) + len(pan):original_name.rfind('.pdf')]
                             name = pan_name_mapping[pan].strip()
@@ -228,10 +232,8 @@ def process_rename(master_file, pdf_files):
                             renamed_count += 1
                             processed_files.append(f"✓ {original_name} → {new_name}")
                         else:
-                            # Add unmatched files to ZIP with original name
                             zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
                     else:
-                        # Add files without PAN to ZIP with original name
                         zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
 
                     progress_bar.progress((idx + 1) / len(pdf_files))
@@ -239,11 +241,10 @@ def process_rename(master_file, pdf_files):
                 except Exception as e:
                     st.error(f"Error processing {uploaded_file.name}: {str(e)}")
 
-            # Display results
             if renamed_count > 0:
                 st.success(f"✅ Successfully processed {renamed_count} files")
                 with st.expander("📋 Processed Files Details", expanded=True):
-                    display_paginated_files(processed_files, page_size=10, key_prefix="processed")
+                    display_files_with_native_pagination(processed_files, "processed")
 
         if renamed_count > 0 or unmatched_files:
             zip_buffer.seek(0)
@@ -254,7 +255,6 @@ def process_rename(master_file, pdf_files):
         st.error(f"❌ Error processing the files: {e}")
         return None
 
-# Main UI
 st.title("📄 PDF Renaming Utility")
 
 header_col1, header_col2 = st.columns(2)
@@ -291,28 +291,6 @@ with col2:
     pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
     if pdf_files:
-        st.markdown(
-            """
-            <style>
-                .process-button {
-                    width: 100%;
-                    background-color: #4CAF50;
-                    color: white;
-                    padding: 10px 20px;
-                    margin-top: 20px;
-                    border: none;
-                    border-radius: 5px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                }
-                .process-button:hover {
-                    background-color: #45a049;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
         if st.button("🚀 Process Files", key="process_files"):
             if master_file and pdf_files:
                 zip_buffer = process_rename(master_file, pdf_files)
