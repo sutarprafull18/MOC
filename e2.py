@@ -5,6 +5,7 @@ from io import BytesIO
 import base64
 import zipfile
 import requests
+import math
 
 # Function to fetch and encode image from URL
 def get_image_from_url(url):
@@ -84,6 +85,18 @@ if logo_image:
             .stButton > button:hover {{
                 background-color: #45a049;
             }}
+            .pagination-info {{
+                text-align: center;
+                margin: 10px 0;
+                font-size: 14px;
+                color: #666;
+            }}
+            .file-list {{
+                background-color: rgba(255, 255, 255, 0.9);
+                padding: 10px;
+                border-radius: 5px;
+                margin: 5px 0;
+            }}
             @media (max-width: 768px) {{
                 .logo-container {{
                     top: 10px;
@@ -104,6 +117,48 @@ if logo_image:
         """,
         unsafe_allow_html=True
     )
+
+def display_paginated_files(files, page_size=10, key_prefix=""):
+    """Display files with pagination"""
+    total_pages = math.ceil(len(files) / page_size)
+    
+    # Initialize session state for pagination if not exists
+    if f"{key_prefix}_page" not in st.session_state:
+        st.session_state[f"{key_prefix}_page"] = 1
+    
+    current_page = st.session_state[f"{key_prefix}_page"]
+    
+    # Display pagination controls
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(f"""
+            <div class="pagination-info">
+                Showing page {current_page} of {total_pages}
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Calculate start and end indices for current page
+    start_idx = (current_page - 1) * page_size
+    end_idx = min(start_idx + page_size, len(files))
+    
+    # Display files for current page
+    for file in files[start_idx:end_idx]:
+        st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
+    
+    # Pagination controls
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    
+    with col1:
+        if current_page > 1:
+            if st.button("⬅️ Previous", key=f"{key_prefix}_prev"):
+                st.session_state[f"{key_prefix}_page"] -= 1
+                st.experimental_rerun()
+    
+    with col4:
+        if current_page < total_pages:
+            if st.button("Next ➡️", key=f"{key_prefix}_next"):
+                st.session_state[f"{key_prefix}_page"] += 1
+                st.experimental_rerun()
 
 def display_excel_data(df):
     """Display Excel data immediately after upload"""
@@ -148,13 +203,12 @@ def process_rename(master_file, pdf_files):
             for uploaded_file in pdf_files:
                 match = re.search(pan_regex, uploaded_file.name)
                 if not match or (match and match.group(1) not in pan_name_mapping):
-                    unmatched_files.append(uploaded_file)
+                    unmatched_files.append(uploaded_file.name)
 
             # Display unmatched files if any
             if unmatched_files:
-                st.warning("⚠️ Found files with no matching PAN numbers:")
-                for file in unmatched_files:
-                    st.text(f"- {file.name}")
+                st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
+                display_paginated_files(unmatched_files, page_size=10, key_prefix="unmatched")
                 
             # Process all files
             for idx, uploaded_file in enumerate(pdf_files):
@@ -172,7 +226,7 @@ def process_rename(master_file, pdf_files):
                             new_name = f"{pan}{remaining_part} - {name}.pdf"
                             zip_file.writestr(new_name, uploaded_file.getvalue())
                             renamed_count += 1
-                            processed_files.append((uploaded_file.name, new_name))
+                            processed_files.append(f"✓ {original_name} → {new_name}")
                         else:
                             # Add unmatched files to ZIP with original name
                             zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
@@ -189,13 +243,7 @@ def process_rename(master_file, pdf_files):
             if renamed_count > 0:
                 st.success(f"✅ Successfully processed {renamed_count} files")
                 with st.expander("📋 Processed Files Details", expanded=True):
-                    for old_name, new_name in processed_files:
-                        st.text(f"✓ {old_name} → {new_name}")
-
-            if unmatched_files:
-                with st.expander("⚠️ Unmatched Files (Included in ZIP)", expanded=True):
-                    for file in unmatched_files:
-                        st.text(f"- {file.name}")
+                    display_paginated_files(processed_files, page_size=10, key_prefix="processed")
 
         if renamed_count > 0 or unmatched_files:
             zip_buffer.seek(0)
@@ -278,4 +326,3 @@ with col2:
                     )
             else:
                 st.error("⚠️ Please upload both the master file and PDF files.")
-
