@@ -107,19 +107,6 @@ if logo_image:
             .process-button:hover {{
                 background-color: #45a049;
             }}
-            .file-navigation {{
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin: 10px 0;
-            }}
-            .file-navigation button {{
-                margin: 0 5px;
-            }}
-            .current-page {{
-                margin: 0 10px;
-                font-size: 14px;
-            }}
             @media (max-width: 768px) {{
                 .logo-container {{
                     top: 10px;
@@ -141,37 +128,70 @@ if logo_image:
         unsafe_allow_html=True
     )
 
-def display_files_with_native_pagination(files, key_prefix="", items_per_page=5):
-    """Display files using Streamlit's native pagination"""
-    if f"{key_prefix}_data" not in st.session_state:
-        st.session_state[f"{key_prefix}_data"] = files
+def display_files_with_improved_pagination(files, key_prefix="", items_per_page=10):
+    total_files = len(files)
+    
+    if f"{key_prefix}_start_idx" not in st.session_state:
+        st.session_state[f"{key_prefix}_start_idx"] = 0
+    
+    if f"{key_prefix}_selected_page" not in st.session_state:
+        st.session_state[f"{key_prefix}_selected_page"] = 1
         
-    if f"{key_prefix}_page" not in st.session_state:
-        st.session_state[f"{key_prefix}_page"] = 1
-
-    total_pages = math.ceil(len(files) / items_per_page)
-    current_page = st.session_state[f"{key_prefix}_page"]
+    total_pages = math.ceil(total_files / items_per_page)
     
-    col1, col2, col3 = st.columns([4, 1, 1])
+    col1, col2, col3, col4, col5 = st.columns([1, 3, 1, 1, 1])
     
-    # Display page information
-    col1.markdown(f"Showing page {current_page} of {total_pages}")
-    
-    # Navigation buttons
-    if col2.button("←", key=f"{key_prefix}_prev", disabled=current_page==1):
-        st.session_state[f"{key_prefix}_page"] = max(1, current_page - 1)
+    if col1.button("⏮️", key=f"{key_prefix}_first", 
+                   help="First page", 
+                   disabled=st.session_state[f"{key_prefix}_selected_page"] == 1):
+        st.session_state[f"{key_prefix}_selected_page"] = 1
+        st.session_state[f"{key_prefix}_start_idx"] = 0
         
-    if col3.button("→", key=f"{key_prefix}_next", disabled=current_page==total_pages):
-        st.session_state[f"{key_prefix}_page"] = min(total_pages, current_page + 1)
+    page_numbers = list(range(1, total_pages + 1))
+    selected_page = col2.selectbox(
+        "Page",
+        page_numbers,
+        key=f"{key_prefix}_page_select",
+        label_visibility="collapsed",
+        index=st.session_state[f"{key_prefix}_selected_page"] - 1
+    )
     
-    # Calculate slice indices
-    start_idx = (current_page - 1) * items_per_page
-    end_idx = min(start_idx + items_per_page, len(files))
+    if selected_page != st.session_state[f"{key_prefix}_selected_page"]:
+        st.session_state[f"{key_prefix}_selected_page"] = selected_page
+        st.session_state[f"{key_prefix}_start_idx"] = (selected_page - 1) * items_per_page
+        
+    if col3.button("←", key=f"{key_prefix}_prev",
+                   help="Previous page",
+                   disabled=st.session_state[f"{key_prefix}_selected_page"] == 1):
+        st.session_state[f"{key_prefix}_selected_page"] -= 1
+        st.session_state[f"{key_prefix}_start_idx"] = (st.session_state[f"{key_prefix}_selected_page"] - 1) * items_per_page
+        
+    if col4.button("→", key=f"{key_prefix}_next",
+                   help="Next page",
+                   disabled=st.session_state[f"{key_prefix}_selected_page"] == total_pages):
+        st.session_state[f"{key_prefix}_selected_page"] += 1
+        st.session_state[f"{key_prefix}_start_idx"] = (st.session_state[f"{key_prefix}_selected_page"] - 1) * items_per_page
+        
+    if col5.button("⏭️", key=f"{key_prefix}_last",
+                   help="Last page",
+                   disabled=st.session_state[f"{key_prefix}_selected_page"] == total_pages):
+        st.session_state[f"{key_prefix}_selected_page"] = total_pages
+        st.session_state[f"{key_prefix}_start_idx"] = (total_pages - 1) * items_per_page
     
-    # Display current page's files
-    current_files = files[start_idx:end_idx]
-    for file in current_files:
-        st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="pagination-info">Showing {min(st.session_state[f"{key_prefix}_start_idx"] + 1, total_files)} '
+        f'to {min(st.session_state[f"{key_prefix}_start_idx"] + items_per_page, total_files)} '
+        f'of {total_files} files</div>',
+        unsafe_allow_html=True
+    )
+    
+    start_idx = st.session_state[f"{key_prefix}_start_idx"]
+    end_idx = min(start_idx + items_per_page, total_files)
+    
+    files_container = st.container()
+    with files_container:
+        for file in files[start_idx:end_idx]:
+            st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
 
 def display_excel_data(df):
     st.markdown("### 📊 Master File Data")
@@ -218,7 +238,7 @@ def process_rename(master_file, pdf_files):
 
             if unmatched_files:
                 st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
-                display_files_with_native_pagination(unmatched_files, "unmatched")
+                display_files_with_improved_pagination(unmatched_files, "unmatched")
 
             for idx, uploaded_file in enumerate(pdf_files):
                 try:
@@ -248,7 +268,7 @@ def process_rename(master_file, pdf_files):
             if renamed_count > 0:
                 st.success(f"✅ Successfully processed {renamed_count} files")
                 with st.expander("📋 Processed Files Details", expanded=True):
-                    display_files_with_native_pagination(processed_files, "processed")
+                    display_files_with_improved_pagination(processed_files, "processed")
 
         if renamed_count > 0 or unmatched_files:
             zip_buffer.seek(0)
