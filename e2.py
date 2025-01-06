@@ -15,11 +15,7 @@ def get_image_from_url(url):
         st.error(f"Error loading image from {url}: {str(e)}")
         return None
 
-st.set_page_config(
-    page_title="PDF Renaming Utility",
-    page_icon="📄",
-    layout="wide"
-)
+st.set_page_config(page_title="PDF Renaming Utility", page_icon="📄", layout="wide")
 
 BACKGROUND_URL = "https://raw.githubusercontent.com/sutarprafull18/MOC/refs/heads/main/background.jpg"
 LOGO_URL = "https://raw.githubusercontent.com/sutarprafull18/MOC/refs/heads/main/logo.png"
@@ -35,6 +31,21 @@ if background_image:
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center center;
+        }}
+        .scrollable-container {{
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }}
+        .file-item {{
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
         }}
         </style>
         """,
@@ -80,46 +91,6 @@ if logo_image:
             .stButton > button:hover {{
                 background-color: #45a049;
             }}
-            .pagination-info {{
-                text-align: center;
-                margin: 10px 0;
-                font-size: 14px;
-                color: #666;
-            }}
-            .file-list {{
-                background-color: rgba(255, 255, 255, 0.9);
-                padding: 10px;
-                border-radius: 5px;
-                margin: 5px 0;
-            }}
-            .process-button {{
-                width: 100%;
-                background-color: #4CAF50;
-                color: white;
-                padding: 10px 20px;
-                margin-top: 20px;
-                border: none;
-                border-radius: 5px;
-                font-size: 16px;
-                cursor: pointer;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }}
-            .process-button:hover {{
-                background-color: #45a049;
-            }}
-            @media (max-width: 768px) {{
-                .logo-container {{
-                    top: 10px;
-                    left: 10px;
-                }}
-                .logo-container img {{
-                    height: 60px;
-                }}
-                div[data-testid="stDataFrame"] {{
-                    padding: 0.5rem;
-                    border-radius: 5px;
-                }}
-            }}
         </style>
         <div class="logo-container">
             <img src="data:image/png;base64,{logo_image}" alt="Logo">
@@ -128,70 +99,18 @@ if logo_image:
         unsafe_allow_html=True
     )
 
-def display_files_with_improved_pagination(files, key_prefix="", items_per_page=10):
-    total_files = len(files)
-    
-    if f"{key_prefix}_start_idx" not in st.session_state:
-        st.session_state[f"{key_prefix}_start_idx"] = 0
-    
-    if f"{key_prefix}_selected_page" not in st.session_state:
-        st.session_state[f"{key_prefix}_selected_page"] = 1
-        
-    total_pages = math.ceil(total_files / items_per_page)
-    
-    col1, col2, col3, col4, col5 = st.columns([1, 3, 1, 1, 1])
-    
-    if col1.button("⏮️", key=f"{key_prefix}_first", 
-                   help="First page", 
-                   disabled=st.session_state[f"{key_prefix}_selected_page"] == 1):
-        st.session_state[f"{key_prefix}_selected_page"] = 1
-        st.session_state[f"{key_prefix}_start_idx"] = 0
-        
-    page_numbers = list(range(1, total_pages + 1))
-    selected_page = col2.selectbox(
-        "Page",
-        page_numbers,
-        key=f"{key_prefix}_page_select",
-        label_visibility="collapsed",
-        index=st.session_state[f"{key_prefix}_selected_page"] - 1
-    )
-    
-    if selected_page != st.session_state[f"{key_prefix}_selected_page"]:
-        st.session_state[f"{key_prefix}_selected_page"] = selected_page
-        st.session_state[f"{key_prefix}_start_idx"] = (selected_page - 1) * items_per_page
-        
-    if col3.button("←", key=f"{key_prefix}_prev",
-                   help="Previous page",
-                   disabled=st.session_state[f"{key_prefix}_selected_page"] == 1):
-        st.session_state[f"{key_prefix}_selected_page"] -= 1
-        st.session_state[f"{key_prefix}_start_idx"] = (st.session_state[f"{key_prefix}_selected_page"] - 1) * items_per_page
-        
-    if col4.button("→", key=f"{key_prefix}_next",
-                   help="Next page",
-                   disabled=st.session_state[f"{key_prefix}_selected_page"] == total_pages):
-        st.session_state[f"{key_prefix}_selected_page"] += 1
-        st.session_state[f"{key_prefix}_start_idx"] = (st.session_state[f"{key_prefix}_selected_page"] - 1) * items_per_page
-        
-    if col5.button("⏭️", key=f"{key_prefix}_last",
-                   help="Last page",
-                   disabled=st.session_state[f"{key_prefix}_selected_page"] == total_pages):
-        st.session_state[f"{key_prefix}_selected_page"] = total_pages
-        st.session_state[f"{key_prefix}_start_idx"] = (total_pages - 1) * items_per_page
-    
-    st.markdown(
-        f'<div class="pagination-info">Showing {min(st.session_state[f"{key_prefix}_start_idx"] + 1, total_files)} '
-        f'to {min(st.session_state[f"{key_prefix}_start_idx"] + items_per_page, total_files)} '
-        f'of {total_files} files</div>',
-        unsafe_allow_html=True
-    )
-    
-    start_idx = st.session_state[f"{key_prefix}_start_idx"]
-    end_idx = min(start_idx + items_per_page, total_files)
-    
-    files_container = st.container()
-    with files_container:
-        for file in files[start_idx:end_idx]:
-            st.markdown(f'<div class="file-list">{file}</div>', unsafe_allow_html=True)
+def display_files_in_container(files, container_title):
+    """Display files in a scrollable container"""
+    if files:
+        files_html = "".join([f'<div class="file-item">{file}</div>' for file in files])
+        st.markdown(
+            f"""
+            <div class="scrollable-container">
+                {files_html}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 def display_excel_data(df):
     st.markdown("### 📊 Master File Data")
@@ -238,7 +157,7 @@ def process_rename(master_file, pdf_files):
 
             if unmatched_files:
                 st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
-                display_files_with_improved_pagination(unmatched_files, "unmatched")
+                display_files_in_container(unmatched_files, "Unmatched Files")
 
             for idx, uploaded_file in enumerate(pdf_files):
                 try:
@@ -268,7 +187,7 @@ def process_rename(master_file, pdf_files):
             if renamed_count > 0:
                 st.success(f"✅ Successfully processed {renamed_count} files")
                 with st.expander("📋 Processed Files Details", expanded=True):
-                    display_files_with_improved_pagination(processed_files, "processed")
+                    display_files_in_container(processed_files, "Processed Files")
 
         if renamed_count > 0 or unmatched_files:
             zip_buffer.seek(0)
