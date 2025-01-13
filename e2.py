@@ -40,6 +40,14 @@ if background_image:
             border-radius: 10px;
             margin: 10px 0;
         }}
+        .file-list-container {{
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }}
         .file-item {{
             padding: 8px;
             margin: 5px 0;
@@ -49,9 +57,23 @@ if background_image:
         }}
         .clear-button {{
             background-color: #dc3545 !important;
+            color: white !important;
         }}
         .clear-button:hover {{
             background-color: #c82333 !important;
+        }}
+        .main-content {{
+            margin-bottom: 100px;  /* Add space for the download button */
+        }}
+        .download-section {{
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
         }}
         </style>
         """,
@@ -144,7 +166,6 @@ def process_rename(master_file, pdf_files):
             return None
 
         master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
-        # Convert PAN numbers to uppercase for case-insensitive comparison
         master_df[pan_column] = master_df[pan_column].str.upper()
         pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
 
@@ -153,7 +174,7 @@ def process_rename(master_file, pdf_files):
             renamed_count = 0
             unmatched_files = []
             processed_files = []
-            pan_regex = r"([A-Za-z]{5}[0-9]{4}[A-Za-z]{1})"  # Modified to accept both cases
+            pan_regex = r"([A-Za-z]{5}[0-9]{4}[A-Za-z]{1})"
 
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -171,7 +192,7 @@ def process_rename(master_file, pdf_files):
                 try:
                     match = re.search(pan_regex, uploaded_file.name)
                     if match:
-                        pan = match.group(1).upper()  # Convert to uppercase for comparison
+                        pan = match.group(1).upper()
                         status_text.text(f"Processing: {uploaded_file.name}")
 
                         if pan in pan_name_mapping:
@@ -239,6 +260,8 @@ with col1:
 
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
+    
+    # Initialize session state for PDF files
     if 'pdf_files' not in st.session_state:
         st.session_state.pdf_files = []
     
@@ -248,21 +271,24 @@ with col2:
         st.session_state.pdf_files = uploaded_files
 
     if st.session_state.pdf_files:
+        st.markdown('<div class="file-list-container">', unsafe_allow_html=True)
         st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
         for file in st.session_state.pdf_files:
             st.write(f"- {file.name}")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         col2_1, col2_2 = st.columns(2)
         with col2_1:
-            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files"):
+            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files", type="primary"):
                 st.session_state.pdf_files = []
-                st.experimental_rerun()
+                st.rerun()
         
         with col2_2:
             if st.button("🚀 Process Files", key="process_files"):
                 if master_file and st.session_state.pdf_files:
                     zip_buffer = process_rename(master_file, st.session_state.pdf_files)
                     if zip_buffer:
+                        st.markdown('<div class="download-section">', unsafe_allow_html=True)
                         st.download_button(
                             label="📥 Download Renamed Files (ZIP)",
                             data=zip_buffer,
@@ -270,5 +296,6 @@ with col2:
                             mime="application/zip",
                             key="download_button"
                         )
+                        st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.error("⚠️ Please upload both the master file and PDF files.")
