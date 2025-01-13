@@ -36,127 +36,166 @@ if background_image:
         .scrollable-container {{
             max-height: 300px;
             overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }}
         .file-list-scroll {{
-            max-height: 150px;
+            height: 250px;
+            max-height: 250px;
             overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 2px solid #4CAF50;
             scrollbar-width: thin;
             scrollbar-color: #4CAF50 #f0f0f0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }}
         .file-list-scroll::-webkit-scrollbar {{
-            width: 8px;
+            width: 10px;
         }}
         .file-list-scroll::-webkit-scrollbar-track {{
             background: #f0f0f0;
-            border-radius: 4px;
+            border-radius: 6px;
         }}
         .file-list-scroll::-webkit-scrollbar-thumb {{
             background-color: #4CAF50;
-            border-radius: 4px;
+            border-radius: 6px;
+            border: 2px solid #f0f0f0;
         }}
         .file-item {{
-            padding: 8px;
-            margin: 5px 0;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+            padding: 12px;
+            margin: 8px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
             border-left: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }}
+        .file-item:hover {{
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }}
         .clear-button {{
             background-color: #4CAF50 !important;
             color: white !important;
             border: none !important;
-            padding: 0.5rem 1rem !important;
-            border-radius: 4px !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 8px !important;
             cursor: pointer !important;
             width: 100% !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600 !important;
         }}
         .clear-button:hover {{
             background-color: #45a049 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2) !important;
         }}
         .button-container {{
             position: sticky;
             bottom: 20px;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
             z-index: 100;
+            backdrop-filter: blur(10px);
         }}
         .file-count {{
-            font-weight: bold;
+            font-weight: 600;
             color: #4CAF50;
-            margin-bottom: 10px;
-            padding: 5px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 5px;
+            margin-bottom: 15px;
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
             display: inline-block;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(76, 175, 80, 0.2);
         }}
         .file-list-item {{
-            padding: 5px;
-            margin: 2px 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 3px;
-            font-size: 0.9em;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }}
+        .file-list-item:hover {{
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }}
         .upload-section {{
-            margin-bottom: 20px;
-            max-height: 150px;
-            overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            scrollbar-width: thin;
-            scrollbar-color: #4CAF50 #f0f0f0;
-        }}
-        .upload-section::-webkit-scrollbar {{
-            width: 8px;
-        }}
-        .upload-section::-webkit-scrollbar-track {{
-            background: #f0f0f0;
-            border-radius: 4px;
-        }}
-        .upload-section::-webkit-scrollbar-thumb {{
-            background-color: #4CAF50;
-            border-radius: 4px;
+            margin-bottom: 25px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }}
         .files-preview {{
-            margin-top: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
+            margin-top: 15px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }}
         .floating-clear-container {{
             position: fixed;
-            right: 20px;
-            bottom: 20px;
+            right: 25px;
+            bottom: 25px;
             z-index: 1000;
         }}
         .floating-clear-button {{
             background-color: #4CAF50 !important;
             color: white !important;
-            padding: 10px 20px !important;
-            border-radius: 5px !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
             border: none !important;
             cursor: pointer !important;
-            font-size: 1em !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            font-size: 1.1em !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            transition: all 0.3s ease !important;
         }}
         .floating-clear-button:hover {{
             background-color: #45a049 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3) !important;
+        }}
+        .stButton > button {{
+            width: 100%;
+            background-color: #4CAF50 !important;
+            color: white !important;
+            padding: 12px 24px !important;
+            margin-top: 20px;
+            border: none !important;
+            border-radius: 8px !important;
+            font-size: 1.1em !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2) !important;
+        }}
+        .stButton > button:hover {{
+            background-color: #45a049 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3) !important;
+        }}
+        div[data-testid="stDataFrame"] {{
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }}
         </style>
         """,
@@ -170,37 +209,20 @@ if logo_image:
         <style>
             .logo-container {{
                 position: fixed;
-                top: 20px;
-                left: 20px;
+                top: 25px;
+                left: 25px;
                 z-index: 1000;
             }}
             .logo-container img {{
-                height: 80px;
+                height: 90px;
                 width: auto;
                 border-radius: 50%;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
             }}
-            div[data-testid="stDataFrame"] {{
-                background-color: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(10px);
-                padding: 1rem;
-                border-radius: 10px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }}
-            .stButton > button {{
-                width: 100%;
-                background-color: #4CAF50;
-                color: white;
-                padding: 10px 20px;
-                margin-top: 20px;
-                border: none;
-                border-radius: 5px;
-                font-size: 16px;
-                cursor: pointer;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }}
-            .stButton > button:hover {{
-                background-color: #45a049;
+            .logo-container img:hover {{
+                transform: scale(1.05);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             }}
         </style>
         <div class="logo-container">
@@ -213,7 +235,7 @@ if logo_image:
 def display_files_in_container(files, container_title):
     """Display files in a scrollable container"""
     if files:
-        files_html = "".join([f'<div class="file-item">{file}</div>' for file in files])
+        files_html = "".join([f'<div class="file-item">📄 {file}</div>' for file in files])
         st.markdown(
             f"""
             <div class="scrollable-container">
@@ -354,7 +376,6 @@ with col2:
         st.session_state.pdf_files = []
         st.session_state.file_uploader_key += 1
     
-    # File uploader section with key from session state
     with st.container():
         st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
@@ -367,7 +388,6 @@ with col2:
         if uploaded_files:
             st.session_state.pdf_files = uploaded_files
             
-            # Show a preview of files with scroll
             st.markdown('<div class="files-preview">', unsafe_allow_html=True)
             st.markdown(f'<div class="file-count">Upload Preview ({len(uploaded_files)} files)</div>', unsafe_allow_html=True)
             with st.container():
@@ -378,16 +398,13 @@ with col2:
             st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Clear files button handling
     if st.session_state.pdf_files:
-        # Hidden button for JavaScript click handling
         st.markdown('<div style="display: none;">', unsafe_allow_html=True)
         if st.button("Clear Files", key="clear_files", type="primary"):
             clear_files()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
             
-        # Floating green clear button
         st.markdown("""
             <div class="floating-clear-container">
                 <button class="floating-clear-button" onclick="document.querySelector('button[data-testid=\\"clear_files\\"]').click()">
@@ -396,7 +413,6 @@ with col2:
             </div>
         """, unsafe_allow_html=True)
 
-    # Process files section
     if st.session_state.pdf_files:
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
         if st.button("🚀 Process Files", key="process_files"):
