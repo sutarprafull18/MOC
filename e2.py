@@ -109,6 +109,26 @@ if background_image:
         }}
         .upload-section {{
             margin-bottom: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            scrollbar-width: thin;
+            scrollbar-color: #4CAF50 #f0f0f0;
+        }}
+        .upload-section::-webkit-scrollbar {{
+            width: 8px;
+        }}
+        .upload-section::-webkit-scrollbar-track {{
+            background: #f0f0f0;
+            border-radius: 4px;
+        }}
+        .upload-section::-webkit-scrollbar-thumb {{
+            background-color: #4CAF50;
+            border-radius: 4px;
         }}
         .files-preview {{
             margin-top: 10px;
