@@ -86,6 +86,21 @@ if background_image:
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 100;
         }}
+        .file-count {{
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+            display: inline-block;
+        }}
+        .file-list-item {{
+            padding: 5px;
+            margin: 2px 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 3px;
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -272,36 +287,41 @@ with col1:
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
     
-    # Initialize session state
+    # Initialize session state for PDF files and uploaded_files
     if 'pdf_files' not in st.session_state:
         st.session_state.pdf_files = []
+    if 'uploaded_files' not in st.session_state:
+        st.session_state.uploaded_files = None
 
     # File uploader
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
-    # Handle uploads
+    # Update session state when new files are uploaded
     if uploaded_files:
+        st.session_state.uploaded_files = uploaded_files
         st.session_state.pdf_files = uploaded_files
 
     # Display files and controls if files exist
     if st.session_state.pdf_files:
-        st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
+        # Display file count outside the scrollable area
+        st.markdown(f'<div class="file-count">Selected files ({len(st.session_state.pdf_files)})</div>', unsafe_allow_html=True)
         
-        # Create scrollable file list with custom styling
+        # Create scrollable file list
         st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
         for file in st.session_state.pdf_files:
-            st.write(f"📄 {file.name}")
+            st.markdown(f'<div class="file-list-item">📄 {file.name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Buttons container at the bottom
+        # Buttons container
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
         col2_1, col2_2 = st.columns(2)
+        
         with col2_1:
-            # Clear button with improved functionality
+            # Enhanced clear button functionality
             if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files", type="primary"):
                 st.session_state.pdf_files = []
-                st.session_state.pop('uploaded_files', None)
-                st.rerun()
+                st.session_state.uploaded_files = None
+                st.experimental_rerun()
         
         with col2_2:
             if st.button("🚀 Process Files", key="process_files"):
