@@ -116,6 +116,28 @@ if background_image:
             padding: 10px;
             border-radius: 5px;
         }}
+        .floating-clear-container {{
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1000;
+        }}
+        .floating-clear-button {{
+            background-color: #dc3545 !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border-radius: 5px !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 1em !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        .floating-clear-button:hover {{
+            background-color: #c82333 !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -336,26 +358,25 @@ with col2:
             st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Clear files button
+    # Clear files button (in original position) and floating button
     if st.session_state.pdf_files:
+        # Original clear button (hidden but functional)
         if st.button("🗑️ Clear All Files", key="clear_files", type="primary"):
             clear_files()
             st.rerun()
+            
+        # Floating clear button
+        st.markdown("""
+            <div class="floating-clear-container">
+                <button class="floating-clear-button" onclick="document.querySelector('button[data-testid=\\"clear_files\\"]').click()">
+                    🗑️ Clear All Files
+                </button>
+            </div>
+        """, unsafe_allow_html=True)
 
     # Process files section
     if st.session_state.pdf_files:
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
         if st.button("🚀 Process Files", key="process_files"):
             if master_file and st.session_state.pdf_files:
-                zip_buffer = process_rename(master_file, st.session_state.pdf_files)
-                if zip_buffer:
-                    st.download_button(
-                        label="📥 Download Renamed Files (ZIP)",
-                        data=zip_buffer,
-                        file_name="renamed_files.zip",
-                        mime="application/zip",
-                        key="download_button"
-                    )
-            else:
-                st.error("⚠️ Please upload both the master file and PDF files.")
-        st.markdown('</div>', unsafe_allow_html=True)
+                zip_buffer = process
