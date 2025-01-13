@@ -43,17 +43,16 @@ if background_image:
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }}
         .file-list-scroll {{
-            height: 250px;
-            max-height: 250px;
+            height: 400px;
             overflow-y: auto;
             background-color: rgba(255, 255, 255, 0.95);
             padding: 15px;
             border-radius: 12px;
-            margin: 15px 0;
             border: 2px solid #4CAF50;
             scrollbar-width: thin;
             scrollbar-color: #4CAF50 #f0f0f0;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin: 0;
         }}
         .file-list-scroll::-webkit-scrollbar {{
             width: 10px;
@@ -109,7 +108,7 @@ if background_image:
         .file-count {{
             font-weight: 600;
             color: #4CAF50;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             padding: 8px 15px;
             background-color: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
@@ -118,58 +117,40 @@ if background_image:
             border: 1px solid rgba(76, 175, 80, 0.2);
         }}
         .file-list-item {{
-            padding: 10px 15px;
-            margin: 5px 0;
+            padding: 8px 12px;
+            margin: 4px 0;
             background-color: #ffffff;
             border-radius: 8px;
-            font-size: 0.95em;
-            transition: all 0.3s ease;
             border-left: 4px solid #4CAF50;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }}
         .file-list-item:hover {{
             transform: translateX(5px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa;
         }}
         .upload-section {{
-            margin-bottom: 25px;
             background-color: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin: 0;
         }}
         .files-preview {{
-            margin-top: 15px;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: transparent;
+            padding: 0;
+            margin: 10px 0 0 0;
         }}
-        .floating-clear-container {{
-            position: fixed;
-            right: 25px;
-            bottom: 25px;
-            z-index: 1000;
-        }}
-        .floating-clear-button {{
-            background-color: #4CAF50 !important;
-            color: white !important;
-            padding: 12px 24px !important;
-            border-radius: 8px !important;
-            border: none !important;
-            cursor: pointer !important;
-            font-size: 1.1em !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s ease !important;
-        }}
-        .floating-clear-button:hover {{
-            background-color: #45a049 !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3) !important;
+        div[data-testid="stDataFrame"] {{
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }}
         .stButton > button {{
             width: 100%;
@@ -189,13 +170,6 @@ if background_image:
             background-color: #45a049 !important;
             transform: translateY(-2px) !important;
             box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3) !important;
-        }}
-        div[data-testid="stDataFrame"] {{
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(10px) !important;
-            padding: 20px !important;
-            border-radius: 12px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }}
         </style>
         """,
@@ -233,7 +207,6 @@ if logo_image:
     )
 
 def display_files_in_container(files, container_title):
-    """Display files in a scrollable container"""
     if files:
         files_html = "".join([f'<div class="file-item">📄 {file}</div>' for file in files])
         st.markdown(
@@ -332,7 +305,6 @@ def process_rename(master_file, pdf_files):
         st.error(f"❌ Error processing the files: {e}")
         return None
 
-# Initialize session states
 if 'pdf_files' not in st.session_state:
     st.session_state.pdf_files = []
 if 'file_uploader_key' not in st.session_state:
@@ -377,7 +349,6 @@ with col2:
         st.session_state.file_uploader_key += 1
     
     with st.container():
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
             "Upload PDF files",
             type=["pdf"],
@@ -388,30 +359,16 @@ with col2:
         if uploaded_files:
             st.session_state.pdf_files = uploaded_files
             
-            st.markdown('<div class="files-preview">', unsafe_allow_html=True)
             st.markdown(f'<div class="file-count">Upload Preview ({len(uploaded_files)} files)</div>', unsafe_allow_html=True)
-            with st.container():
-                st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
-                for file in uploaded_files:
-                    st.markdown(f'<div class="file-list-item">📄 {file.name}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
+            for file in uploaded_files:
+                st.markdown(f'<div class="file-list-item">📄 {file.name}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.pdf_files:
-        st.markdown('<div style="display: none;">', unsafe_allow_html=True)
-        if st.button("Clear Files", key="clear_files", type="primary"):
+        if st.button("🗑️ Clear All Files", key="clear_files", type="primary"):
             clear_files()
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-            
-        st.markdown("""
-            <div class="floating-clear-container">
-                <button class="floating-clear-button" onclick="document.querySelector('button[data-testid=\\"clear_files\\"]').click()">
-                    🗑️ Clear All Files
-                </button>
-            </div>
-        """, unsafe_allow_html=True)
 
     if st.session_state.pdf_files:
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
