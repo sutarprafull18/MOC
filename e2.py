@@ -47,6 +47,12 @@ if background_image:
             border-radius: 5px;
             border-left: 4px solid #4CAF50;
         }}
+        .clear-button {{
+            background-color: #dc3545 !important;
+        }}
+        .clear-button:hover {{
+            background-color: #c82333 !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -138,6 +144,8 @@ def process_rename(master_file, pdf_files):
             return None
 
         master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
+        # Convert PAN numbers to uppercase for case-insensitive comparison
+        master_df[pan_column] = master_df[pan_column].str.upper()
         pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
 
         zip_buffer = BytesIO()
@@ -145,14 +153,14 @@ def process_rename(master_file, pdf_files):
             renamed_count = 0
             unmatched_files = []
             processed_files = []
-            pan_regex = r"([A-Z]{5}[0-9]{4}[A-Z]{1})"
+            pan_regex = r"([A-Za-z]{5}[0-9]{4}[A-Za-z]{1})"  # Modified to accept both cases
 
             progress_bar = st.progress(0)
             status_text = st.empty()
 
             for uploaded_file in pdf_files:
                 match = re.search(pan_regex, uploaded_file.name)
-                if not match or (match and match.group(1) not in pan_name_mapping):
+                if not match or (match and match.group(1).upper() not in pan_name_mapping):
                     unmatched_files.append(uploaded_file.name)
 
             if unmatched_files:
@@ -163,12 +171,12 @@ def process_rename(master_file, pdf_files):
                 try:
                     match = re.search(pan_regex, uploaded_file.name)
                     if match:
-                        pan = match.group(1)
+                        pan = match.group(1).upper()  # Convert to uppercase for comparison
                         status_text.text(f"Processing: {uploaded_file.name}")
 
                         if pan in pan_name_mapping:
                             original_name = uploaded_file.name
-                            remaining_part = original_name[original_name.find(pan) + len(pan):original_name.rfind('.pdf')]
+                            remaining_part = original_name[original_name.lower().find(pan.lower()) + len(pan):original_name.rfind('.pdf')]
                             name = pan_name_mapping[pan].strip()
                             new_name = f"{pan}{remaining_part} - {name}.pdf"
                             zip_file.writestr(new_name, uploaded_file.getvalue())
@@ -206,7 +214,7 @@ with header_col1:
     st.markdown("""
     ### 📌 Instructions:
     1. Upload the Master Excel file containing PAN and NAME columns
-    2. Upload all PDF files that need to be renamed
+    2. Upload PDF files that need to be renamed
     3. Click 'Process Files' to rename and download the results
     """)
 
@@ -231,19 +239,36 @@ with col1:
 
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
-    pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+    if 'pdf_files' not in st.session_state:
+        st.session_state.pdf_files = []
+    
+    uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+    
+    if uploaded_files:
+        st.session_state.pdf_files = uploaded_files
 
-    if pdf_files:
-        if st.button("🚀 Process Files", key="process_files"):
-            if master_file and pdf_files:
-                zip_buffer = process_rename(master_file, pdf_files)
-                if zip_buffer:
-                    st.download_button(
-                        label="📥 Download Renamed Files (ZIP)",
-                        data=zip_buffer,
-                        file_name="renamed_files.zip",
-                        mime="application/zip",
-                        key="download_button"
-                    )
-            else:
-                st.error("⚠️ Please upload both the master file and PDF files.")
+    if st.session_state.pdf_files:
+        st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
+        for file in st.session_state.pdf_files:
+            st.write(f"- {file.name}")
+        
+        col2_1, col2_2 = st.columns(2)
+        with col2_1:
+            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files"):
+                st.session_state.pdf_files = []
+                st.experimental_rerun()
+        
+        with col2_2:
+            if st.button("🚀 Process Files", key="process_files"):
+                if master_file and st.session_state.pdf_files:
+                    zip_buffer = process_rename(master_file, st.session_state.pdf_files)
+                    if zip_buffer:
+                        st.download_button(
+                            label="📥 Download Renamed Files (ZIP)",
+                            data=zip_buffer,
+                            file_name="renamed_files.zip",
+                            mime="application/zip",
+                            key="download_button"
+                        )
+                else:
+                    st.error("⚠️ Please upload both the master file and PDF files.")
