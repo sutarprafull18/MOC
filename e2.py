@@ -168,7 +168,111 @@ if logo_image:
         unsafe_allow_html=True
     )
 
-[... Previous helper functions remain the same ...]
+def display_files_in_container(files, container_title):
+    """Display files in a scrollable container"""
+    if files:
+        files_html = "".join([f'<div class="file-item">{file}</div>' for file in files])
+        st.markdown(
+            f"""
+            <div class="scrollable-container">
+                {files_html}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+def display_excel_data(df):
+    st.markdown("### 📊 Master File Data")
+    st.dataframe(df, use_container_width=True)
+    
+    rows = len(df)
+    total_data_points = rows + (rows - 1)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Rows", rows)
+    with col2:
+        st.metric("Total Data Points", total_data_points)
+    with col3:
+        st.metric("Total Columns", len(df.columns))
+
+def process_rename(master_file, pdf_files):
+    try:
+        temp_df = pd.read_excel(master_file)
+        pan_column = next((col for col in temp_df.columns if "PAN" in col.upper()), None)
+        name_column = next((col for col in temp_df.columns if "NAME" in col.upper()), None)
+
+        if not pan_column or not name_column:
+            st.error("❌ Error: Could not find PAN or NAME columns in the master file.")
+            return None
+
+        master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
+        master_df[pan_column] = master_df[pan_column].str.upper()
+        pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
+
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            renamed_count = 0
+            unmatched_files = []
+            processed_files = []
+            pan_regex = r"([A-Za-z]{5}[0-9]{4}[A-Za-z]{1})"
+
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            for uploaded_file in pdf_files:
+                match = re.search(pan_regex, uploaded_file.name)
+                if not match or (match and match.group(1).upper() not in pan_name_mapping):
+                    unmatched_files.append(uploaded_file.name)
+
+            if unmatched_files:
+                st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
+                display_files_in_container(unmatched_files, "Unmatched Files")
+
+            for idx, uploaded_file in enumerate(pdf_files):
+                try:
+                    match = re.search(pan_regex, uploaded_file.name)
+                    if match:
+                        pan = match.group(1).upper()
+                        status_text.text(f"Processing: {uploaded_file.name}")
+
+                        if pan in pan_name_mapping:
+                            original_name = uploaded_file.name
+                            remaining_part = original_name[original_name.lower().find(pan.lower()) + len(pan):original_name.rfind('.pdf')]
+                            name = pan_name_mapping[pan].strip()
+                            new_name = f"{pan}{remaining_part} - {name}.pdf"
+                            zip_file.writestr(new_name, uploaded_file.getvalue())
+                            renamed_count += 1
+                            processed_files.append(f"✓ {original_name} → {new_name}")
+                        else:
+                            zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
+                    else:
+                        zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
+
+                    progress_bar.progress((idx + 1) / len(pdf_files))
+
+                except Exception as e:
+                    st.error(f"Error processing {uploaded_file.name}: {str(e)}")
+
+            if renamed_count > 0:
+                st.success(f"✅ Successfully processed {renamed_count} files")
+                with st.expander("📋 Processed Files Details", expanded=True):
+                    display_files_in_container(processed_files, "Processed Files")
+
+        if renamed_count > 0 or unmatched_files:
+            zip_buffer.seek(0)
+            return zip_buffer
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Error processing the files: {e}")
+        return None
+
+# Initialize session states
+if 'pdf_files' not in st.session_state:
+    st.session_state.pdf_files = []
+if 'file_uploader_key' not in st.session_state:
+    st.session_state.file_uploader_key = 0
 
 st.title("📄 PDF Renaming Utility")
 
@@ -204,19 +308,24 @@ with col1:
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
     
-    # Initialize session state
-    if 'pdf_files' not in st.session_state:
+    def clear_files():
         st.session_state.pdf_files = []
-
-    # File uploader section
+        st.session_state.file_uploader_key += 1
+    
+    # File uploader section with key from session state
     with st.container():
         st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-        uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+        uploaded_files = st.file_uploader(
+            "Upload PDF files",
+            type=["pdf"],
+            accept_multiple_files=True,
+            key=f"file_uploader_{st.session_state.file_uploader_key}"
+        )
         
         if uploaded_files:
             st.session_state.pdf_files = uploaded_files
             
-            # Show a preview of first few files with scroll
+            # Show a preview of files with scroll
             st.markdown('<div class="files-preview">', unsafe_allow_html=True)
             st.markdown(f'<div class="file-count">Upload Preview ({len(uploaded_files)} files)</div>', unsafe_allow_html=True)
             with st.container():
@@ -230,9 +339,8 @@ with col2:
     # Clear files button
     if st.session_state.pdf_files:
         if st.button("🗑️ Clear All Files", key="clear_files", type="primary"):
-            st.session_state.pdf_files = []
-            st.session_state.uploaded_files = None
-            st._rerun()  # Force complete rerun to clear the file uploader
+            clear_files()
+            st.rerun()
 
     # Process files section
     if st.session_state.pdf_files:
