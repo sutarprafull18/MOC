@@ -53,6 +53,7 @@ if background_image:
             scrollbar-color: #4CAF50 #f0f0f0;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
             margin: 0;
+            display: block;
         }}
         .file-list-scroll::-webkit-scrollbar {{
             width: 10px;
@@ -125,9 +126,6 @@ if background_image:
             transition: all 0.2s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             font-size: 0.9em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }}
         .file-list-item:hover {{
             transform: translateX(5px);
@@ -144,6 +142,7 @@ if background_image:
             background-color: transparent;
             padding: 0;
             margin: 10px 0 0 0;
+            display: block;
         }}
         div[data-testid="stDataFrame"] {{
             background-color: rgba(255, 255, 255, 0.95) !important;
@@ -349,6 +348,7 @@ with col2:
         st.session_state.file_uploader_key += 1
     
     with st.container():
+        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
             "Upload PDF files",
             type=["pdf"],
@@ -359,11 +359,23 @@ with col2:
         if uploaded_files:
             st.session_state.pdf_files = uploaded_files
             
-            st.markdown(f'<div class="file-count">Upload Preview ({len(uploaded_files)} files)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
-            for file in uploaded_files:
-                st.markdown(f'<div class="file-list-item">📄 {file.name}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            files_html = "".join([
+                f'<div class="file-list-item">📄 {file.name}</div>'
+                for file in uploaded_files
+            ])
+            
+            st.markdown(
+                f"""
+                <div class="files-preview">
+                    <div class="file-count">Upload Preview ({len(uploaded_files)} files)</div>
+                    <div class="file-list-scroll">
+                        {files_html}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.pdf_files:
         if st.button("🗑️ Clear All Files", key="clear_files", type="primary"):
