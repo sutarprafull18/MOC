@@ -41,12 +41,17 @@ if background_image:
             margin: 10px 0;
         }}
         .file-list-container {{
-            max-height: 400px;
+            max-height: 200px;
             overflow-y: auto;
             background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 10px;
             margin: 10px 0;
+            border: 1px solid #ddd;
+        }}
+        .file-list-item {{
+            padding: 5px;
+            border-bottom: 1px solid #eee;
         }}
         .file-item {{
             padding: 8px;
@@ -63,7 +68,7 @@ if background_image:
             background-color: #c82333 !important;
         }}
         .main-content {{
-            margin-bottom: 100px;  /* Add space for the download button */
+            margin-bottom: 100px;
         }}
         .download-section {{
             position: fixed;
@@ -261,26 +266,37 @@ with col1:
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
     
-    # Initialize session state for PDF files
+    # Initialize session state for PDF files if not exists
     if 'pdf_files' not in st.session_state:
         st.session_state.pdf_files = []
     
+    # Add a key to track if we should clear files
+    if 'clear_files_flag' not in st.session_state:
+        st.session_state.clear_files_flag = False
+    
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
     
-    if uploaded_files:
+    # Handle file uploads and clearing
+    if st.session_state.clear_files_flag:
+        st.session_state.pdf_files = []
+        st.session_state.clear_files_flag = False
+        uploaded_files = None
+        st.rerun()
+    elif uploaded_files:
         st.session_state.pdf_files = uploaded_files
 
     if st.session_state.pdf_files:
-        st.markdown('<div class="file-list-container">', unsafe_allow_html=True)
         st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
+        # Create scrollable container for file list
+        st.markdown('<div class="file-list-container">', unsafe_allow_html=True)
         for file in st.session_state.pdf_files:
-            st.write(f"- {file.name}")
+            st.markdown(f'<div class="file-list-item">- {file.name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         col2_1, col2_2 = st.columns(2)
         with col2_1:
             if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files", type="primary"):
-                st.session_state.pdf_files = []
+                st.session_state.clear_files_flag = True
                 st.rerun()
         
         with col2_2:
