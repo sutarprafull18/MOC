@@ -40,15 +40,6 @@ if background_image:
             border-radius: 10px;
             margin: 10px 0;
         }}
-        .file-list-container {{
-            max-height: 200px;
-            overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-        }}
         .file-item {{
             padding: 8px;
             margin: 5px 0;
@@ -61,15 +52,6 @@ if background_image:
         }}
         .clear-button:hover {{
             background-color: #c82333 !important;
-        }}
-        .action-button-container {{
-            position: sticky;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }}
         </style>
         """,
@@ -123,7 +105,106 @@ if logo_image:
         unsafe_allow_html=True
     )
 
-[Previous display_files_in_container, display_excel_data, and process_rename functions remain exactly the same]
+def display_files_in_container(files, container_title):
+    """Display files in a scrollable container"""
+    if files:
+        files_html = "".join([f'<div class="file-item">{file}</div>' for file in files])
+        st.markdown(
+            f"""
+            <div class="scrollable-container">
+                {files_html}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+def display_excel_data(df):
+    st.markdown("### 📊 Master File Data")
+    st.dataframe(df, use_container_width=True)
+    
+    rows = len(df)
+    total_data_points = rows + (rows - 1)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Rows", rows)
+    with col2:
+        st.metric("Total Data Points", total_data_points)
+    with col3:
+        st.metric("Total Columns", len(df.columns))
+
+def process_rename(master_file, pdf_files):
+    try:
+        temp_df = pd.read_excel(master_file)
+        pan_column = next((col for col in temp_df.columns if "PAN" in col.upper()), None)
+        name_column = next((col for col in temp_df.columns if "NAME" in col.upper()), None)
+
+        if not pan_column or not name_column:
+            st.error("❌ Error: Could not find PAN or NAME columns in the master file.")
+            return None
+
+        master_df = pd.read_excel(master_file, usecols=[pan_column, name_column])
+        # Convert PAN numbers to uppercase for case-insensitive comparison
+        master_df[pan_column] = master_df[pan_column].str.upper()
+        pan_name_mapping = dict(zip(master_df[pan_column], master_df[name_column]))
+
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            renamed_count = 0
+            unmatched_files = []
+            processed_files = []
+            pan_regex = r"([A-Za-z]{5}[0-9]{4}[A-Za-z]{1})"  # Modified to accept both cases
+
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            for uploaded_file in pdf_files:
+                match = re.search(pan_regex, uploaded_file.name)
+                if not match or (match and match.group(1).upper() not in pan_name_mapping):
+                    unmatched_files.append(uploaded_file.name)
+
+            if unmatched_files:
+                st.warning(f"⚠️ Found {len(unmatched_files)} files with no matching PAN numbers:")
+                display_files_in_container(unmatched_files, "Unmatched Files")
+
+            for idx, uploaded_file in enumerate(pdf_files):
+                try:
+                    match = re.search(pan_regex, uploaded_file.name)
+                    if match:
+                        pan = match.group(1).upper()  # Convert to uppercase for comparison
+                        status_text.text(f"Processing: {uploaded_file.name}")
+
+                        if pan in pan_name_mapping:
+                            original_name = uploaded_file.name
+                            remaining_part = original_name[original_name.lower().find(pan.lower()) + len(pan):original_name.rfind('.pdf')]
+                            name = pan_name_mapping[pan].strip()
+                            new_name = f"{pan}{remaining_part} - {name}.pdf"
+                            zip_file.writestr(new_name, uploaded_file.getvalue())
+                            renamed_count += 1
+                            processed_files.append(f"✓ {original_name} → {new_name}")
+                        else:
+                            zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
+                    else:
+                        zip_file.writestr(f"unmatched/{uploaded_file.name}", uploaded_file.getvalue())
+
+                    progress_bar.progress((idx + 1) / len(pdf_files))
+
+                except Exception as e:
+                    st.error(f"Error processing {uploaded_file.name}: {str(e)}")
+
+            if renamed_count > 0:
+                st.success(f"✅ Successfully processed {renamed_count} files")
+                with st.expander("📋 Processed Files Details", expanded=True):
+                    display_files_in_container(processed_files, "Processed Files")
+
+        if renamed_count > 0 or unmatched_files:
+            zip_buffer.seek(0)
+            return zip_buffer
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Error processing the files: {e}")
+        return None
 
 st.title("📄 PDF Renaming Utility")
 
@@ -146,10 +227,6 @@ with header_col2:
     - Detailed progress tracking
     """)
 
-# Initialize session state
-if 'pdf_files' not in st.session_state:
-    st.session_state.pdf_files = []
-
 col1, col2 = st.columns(2)
 
 with col1:
@@ -162,35 +239,23 @@ with col1:
 
 with col2:
     st.markdown("### 📁 Step 2: Upload PDF Files")
+    if 'pdf_files' not in st.session_state:
+        st.session_state.pdf_files = []
     
-    # File uploader
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
     
-    # Update session state with new uploads
     if uploaded_files:
         st.session_state.pdf_files = uploaded_files
 
-    # Display file list in scrollable container
     if st.session_state.pdf_files:
-        st.markdown("### 📋 Selected Files")
-        st.markdown(
-            f"""
-            <div class="file-list-container">
-                {f"Total Files: {len(st.session_state.pdf_files)}"}
-                {"".join([f'<div class="file-item">- {file.name}</div>' for file in st.session_state.pdf_files])}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Action buttons in sticky container
-        st.markdown('<div class="action-button-container">', unsafe_allow_html=True)
+        st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
+        for file in st.session_state.pdf_files:
+            st.write(f"- {file.name}")
         
         col2_1, col2_2 = st.columns(2)
         with col2_1:
-            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files", type="primary"):
+            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files"):
                 st.session_state.pdf_files = []
-                st.success("✅ All files cleared successfully!")
                 st.experimental_rerun()
         
         with col2_2:
@@ -207,32 +272,3 @@ with col2:
                         )
                 else:
                     st.error("⚠️ Please upload both the master file and PDF files.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# Add scroll to top button
-st.markdown("""
-<script>
-    var mybutton = document.createElement("button");
-    mybutton.innerHTML = "↑ Top";
-    mybutton.style.position = "fixed";
-    mybutton.style.bottom = "20px";
-    mybutton.style.right = "30px";
-    mybutton.style.zIndex = "99";
-    mybutton.style.border = "none";
-    mybutton.style.outline = "none";
-    mybutton.style.backgroundColor = "#4CAF50";
-    mybutton.style.color = "white";
-    mybutton.style.cursor = "pointer";
-    mybutton.style.padding = "15px";
-    mybutton.style.borderRadius = "10px";
-    mybutton.style.fontSize = "18px";
-
-    mybutton.onclick = function() {
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
-    }
-
-    document.body.appendChild(mybutton);
-</script>
-""", unsafe_allow_html=True)
