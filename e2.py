@@ -71,7 +71,7 @@ if background_image:
             border-left: 4px solid #4CAF50;
         }}
         .clear-button {{
-            background-color: #dc3545 !important;
+            background-color: #4CAF50 !important;
             color: white !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
@@ -80,7 +80,7 @@ if background_image:
             width: 100% !important;
         }}
         .clear-button:hover {{
-            background-color: #c82333 !important;
+            background-color: #45a049 !important;
         }}
         .button-container {{
             position: sticky;
@@ -123,7 +123,7 @@ if background_image:
             z-index: 1000;
         }}
         .floating-clear-button {{
-            background-color: #dc3545 !important;
+            background-color: #4CAF50 !important;
             color: white !important;
             padding: 10px 20px !important;
             border-radius: 5px !important;
@@ -136,7 +136,7 @@ if background_image:
             justify-content: center !important;
         }}
         .floating-clear-button:hover {{
-            background-color: #c82333 !important;
+            background-color: #45a049 !important;
         }}
         </style>
         """,
@@ -358,14 +358,16 @@ with col2:
             st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Clear files button (in original position) and floating button
+    # Clear files button handling
     if st.session_state.pdf_files:
-        # Original clear button (hidden but functional)
-        if st.button("🗑️ Clear All Files", key="clear_files", type="primary"):
+        # Hidden button for JavaScript click handling
+        st.markdown('<div style="display: none;">', unsafe_allow_html=True)
+        if st.button("Clear Files", key="clear_files", type="primary"):
             clear_files()
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
             
-        # Floating clear button
+        # Floating green clear button
         st.markdown("""
             <div class="floating-clear-container">
                 <button class="floating-clear-button" onclick="document.querySelector('button[data-testid=\\"clear_files\\"]').click()">
@@ -379,4 +381,13 @@ with col2:
         st.markdown('<div class="button-container">', unsafe_allow_html=True)
         if st.button("🚀 Process Files", key="process_files"):
             if master_file and st.session_state.pdf_files:
-                zip_buffer = process
+                zip_buffer = process_rename(master_file, st.session_state.pdf_files)
+                if zip_buffer:
+                    st.download_button(
+                        "📥 Download Renamed Files",
+                        zip_buffer,
+                        "renamed_files.zip",
+                        "application/zip",
+                        use_container_width=True
+                    )
+        st.markdown('</div>', unsafe_allow_html=True)
