@@ -6,6 +6,7 @@ import base64
 import zipfile
 import requests
 import math
+import time
 
 def get_image_from_url(url):
     try:
@@ -41,18 +42,26 @@ if background_image:
             margin: 10px 0;
         }}
         .file-list-scroll {{
-            height: 200px !important;
-            overflow-y: auto !important;
-            padding: 10px !important;
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            border-radius: 5px !important;
-            border: 1px solid #ddd !important;
-            margin: 10px 0 !important;
+            max-height: 200px;
+            overflow-y: scroll;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            scrollbar-width: thin;
+            scrollbar-color: #4CAF50 #f0f0f0;
         }}
-        .file-entry {{
-            padding: 5px !important;
-            border-bottom: 1px solid #eee !important;
-            margin: 2px 0 !important;
+        .file-list-scroll::-webkit-scrollbar {{
+            width: 8px;
+        }}
+        .file-list-scroll::-webkit-scrollbar-track {{
+            background: #f0f0f0;
+            border-radius: 4px;
+        }}
+        .file-list-scroll::-webkit-scrollbar-thumb {{
+            background-color: #4CAF50;
+            border-radius: 4px;
         }}
         .file-item {{
             padding: 8px;
@@ -68,18 +77,14 @@ if background_image:
         .clear-button:hover {{
             background-color: #c82333 !important;
         }}
-        .main-content {{
-            margin-bottom: 100px;
-        }}
-        .download-section {{
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        .button-container {{
+            position: sticky;
+            bottom: 20px;
             background-color: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            z-index: 1000;
-            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
         }}
         </style>
         """,
@@ -270,33 +275,32 @@ with col2:
     # Initialize session state
     if 'pdf_files' not in st.session_state:
         st.session_state.pdf_files = []
-        
+
     # File uploader
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
-    
-    # Handle clear button action
-    def clear_files():
-        st.session_state.pdf_files = []
-        st.session_state.widget_key = None
-    
-    # Update files in session state if new files are uploaded
+
+    # Handle uploads
     if uploaded_files:
         st.session_state.pdf_files = uploaded_files
 
-    # Display files if they exist
+    # Display files and controls if files exist
     if st.session_state.pdf_files:
         st.write(f"Selected files ({len(st.session_state.pdf_files)}):")
         
-        # Create scrollable container
-        with st.container():
-            st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
-            for file in st.session_state.pdf_files:
-                st.markdown(f'<div class="file-entry">📄 {file.name}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        # Create scrollable file list with custom styling
+        st.markdown('<div class="file-list-scroll">', unsafe_allow_html=True)
+        for file in st.session_state.pdf_files:
+            st.write(f"📄 {file.name}")
+        st.markdown('</div>', unsafe_allow_html=True)
         
+        # Buttons container at the bottom
+        st.markdown('<div class="button-container">', unsafe_allow_html=True)
         col2_1, col2_2 = st.columns(2)
         with col2_1:
-            if st.button("🗑️ Clear All Files", key="clear_files", on_click=clear_files, help="Remove all selected files", type="primary"):
+            # Clear button with improved functionality
+            if st.button("🗑️ Clear All Files", key="clear_files", help="Remove all selected files", type="primary"):
+                st.session_state.pdf_files = []
+                st.session_state.pop('uploaded_files', None)
                 st.rerun()
         
         with col2_2:
@@ -304,7 +308,6 @@ with col2:
                 if master_file and st.session_state.pdf_files:
                     zip_buffer = process_rename(master_file, st.session_state.pdf_files)
                     if zip_buffer:
-                        st.markdown('<div class="download-section">', unsafe_allow_html=True)
                         st.download_button(
                             label="📥 Download Renamed Files (ZIP)",
                             data=zip_buffer,
@@ -312,6 +315,6 @@ with col2:
                             mime="application/zip",
                             key="download_button"
                         )
-                        st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.error("⚠️ Please upload both the master file and PDF files.")
+        st.markdown('</div>', unsafe_allow_html=True)
